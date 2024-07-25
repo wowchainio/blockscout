@@ -457,6 +457,7 @@ config :explorer, Explorer.ThirdPartyIntegrations.Sourcify,
   repo_url: System.get_env("SOURCIFY_REPO_URL") || "https://repo.sourcify.dev/contracts"
 
 config :explorer, Explorer.ThirdPartyIntegrations.SolidityScan,
+  platform_id: System.get_env("SOLIDITYSCAN_PLATFORM_ID", "16"),
   chain_id: System.get_env("SOLIDITYSCAN_CHAIN_ID"),
   api_key: System.get_env("SOLIDITYSCAN_API_TOKEN")
 
@@ -596,7 +597,9 @@ config :explorer, Explorer.Chain.TokenTransfer,
   whitelisted_weth_contracts: ConfigHelper.parse_list_env_var("WHITELISTED_WETH_CONTRACTS", ""),
   weth_token_transfers_filtering_enabled: ConfigHelper.parse_bool_env_var("WETH_TOKEN_TRANSFERS_FILTERING_ENABLED")
 
-config :explorer, Explorer.Chain.Metrics, disabled?: ConfigHelper.parse_bool_env_var("METRICS_DISABLE_PUBLIC", "false")
+config :explorer, Explorer.Chain.Metrics,
+  enabled: ConfigHelper.parse_bool_env_var("PUBLIC_METRICS_ENABLED", "false"),
+  update_period_hours: ConfigHelper.parse_integer_env_var("PUBLIC_METRICS_UPDATE_PERIOD_HOURS", 24)
 
 ###############
 ### Indexer ###
@@ -705,6 +708,9 @@ config :indexer, Indexer.Block.Realtime.Supervisor,
   enabled: !ConfigHelper.parse_bool_env_var("DISABLE_REALTIME_INDEXER")
 
 config :indexer, Indexer.Block.Catchup.Supervisor, enabled: !ConfigHelper.parse_bool_env_var("DISABLE_CATCHUP_INDEXER")
+
+config :indexer, Indexer.Fetcher.ReplacedTransaction.Supervisor,
+  disabled?: ConfigHelper.parse_bool_env_var("INDEXER_DISABLE_REPLACED_TRANSACTION_FETCHER")
 
 config :indexer, Indexer.Fetcher.TokenInstance.Realtime.Supervisor,
   disabled?: ConfigHelper.parse_bool_env_var("INDEXER_DISABLE_TOKEN_INSTANCE_REALTIME_FETCHER")
