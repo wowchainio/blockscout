@@ -12,7 +12,6 @@ defmodule BlockScoutWeb.API.V2.SmartContractView do
   alias Explorer.Chain
   alias Explorer.Chain.{Address, Hash, SmartContract, SmartContractAdditionalSource}
   alias Explorer.Chain.SmartContract.Proxy
-  alias Explorer.Chain.Zilliqa.Helper, as: ZilliqaHelper
   alias Explorer.SmartContract.Helper, as: SmartContractHelper
   alias Explorer.Visualize.Sol2uml
 
@@ -318,13 +317,17 @@ defmodule BlockScoutWeb.API.V2.SmartContractView do
       defp add_chain_type_fields(smart_contract_info, _params, false),
         do: smart_contract_info
 
+    :arbitrum ->
+      defp add_chain_type_fields(smart_contract_info, %{target_contract: target_contract}, _single?) do
+        smart_contract_info
+        |> Map.put("package_name", target_contract.package_name)
+        |> Map.put("github_repository_metadata", target_contract.github_repository_metadata)
+      end
+
     :zksync ->
       defp add_chain_type_fields(smart_contract_info, %{target_contract: target_contract}, _single?) do
-        Map.put(
-          smart_contract_info,
-          "zk_compiler_version",
-          target_contract.zk_compiler_version
-        )
+        smart_contract_info
+        |> Map.put("zk_compiler_version", target_contract.zk_compiler_version)
       end
 
     _ ->
@@ -419,18 +422,11 @@ defmodule BlockScoutWeb.API.V2.SmartContractView do
   @spec smart_contract_language(Address.t()) :: String.t()
   defp smart_contract_language(address) do
     cond do
-      # todo: This is a temporary workaround to find Scilla contracts.
-      # As soon as https://github.com/blockscout/blockscout/pull/11183
-      # is merged, we should migrate to `language` field.
-      Application.get_env(:explorer, :chain_type) == :zilliqa and
-          ZilliqaHelper.scilla_transaction?(address.contracts_creation_transaction) ->
-        "scilla"
-
       address.smart_contract.is_vyper_contract ->
         "vyper"
 
       not is_nil(address.smart_contract.language) ->
-        smart_contract.language
+        address.smart_contract.language
 
       is_nil(address.smart_contract.abi) ->
         "yul"
@@ -501,31 +497,5 @@ defmodule BlockScoutWeb.API.V2.SmartContractView do
 
   def render_json(value, _type) do
     to_string(value)
-  end
-
-  case Application.compile_env(:explorer, :chain_type) do
-    :filecoin ->
-      defp add_filecoin_info(result, params) do
-        # credo:disable-for-next-line Credo.Check.Design.AliasUsage
-        BlockScoutWeb.API.V2.FilecoinView.preload_and_put_filecoin_robust_address(result, params)
-      end
-
-    :arbitrum ->
-      defp chain_type_fields(result, %{target_contract: target_contract}) do
-        result
-        |> Map.put("package_name", target_contract.package_name)
-        |> Map.put("github_repository_metadata", target_contract.github_repository_metadata)
-      end
-
-    :zksync ->
-      defp chain_type_fields(result, %{target_contract: target_contract}) do
-        result
-        |> Map.put("zk_compiler_version", target_contract.zk_compiler_version)
-      end
-
-    _ ->
-      defp add_filecoin_info(result, _address) do
-        result
-      end
   end
 end
